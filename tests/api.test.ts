@@ -253,6 +253,22 @@ describe("web API", () => {
     expect(status).toBe(403);
   });
 
+  it("serves the web interface with a strict content security policy", async () => {
+    const page = await fetch(`${baseUrl}/`);
+    const script = await fetch(`${baseUrl}/app.js`);
+    const styles = await fetch(`${baseUrl}/styles.css`);
+
+    expect(page.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(page.headers.get("content-security-policy")).toBe(
+      "default-src 'self'",
+    );
+    expect(await page.text()).toContain("Arrastra tus PDFs aquí");
+    expect(script.headers.get("content-type")).toBe(
+      "text/javascript; charset=utf-8",
+    );
+    expect(styles.status).toBe(200);
+  });
+
   it("returns 404 for unknown routes", async () => {
     expect((await fetch(`${baseUrl}/api/unknown`)).status).toBe(404);
   });
