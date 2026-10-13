@@ -15,7 +15,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "web": "tsx src/cli.ts serve",
-    "fixtures": "tsx scripts/create-sample-pdf.ts"
+    "fixtures": "tsx scripts/create-sample-pdf.ts",
+    "evals": "tsx evals/run.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

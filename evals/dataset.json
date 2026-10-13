@@ -1,0 +1,185 @@
+{
+  "documents": ["manual-nebula.pdf", "politica-alba.pdf"],
+  "cases": [
+    {
+      "id": "nebula-fundacion",
+      "question": "¿En qué año se fundó Laboratorios Nébula y en qué ciudad?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [1],
+      "expectedFacts": ["2011", "zaragoza"]
+    },
+    {
+      "id": "nebula-empleados",
+      "question": "¿Cuántos empleados tiene Laboratorios Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [1],
+      "expectedFacts": ["142"]
+    },
+    {
+      "id": "nebula-vacaciones",
+      "question": "¿Cuántos días de vacaciones al año tienen los empleados de Laboratorios Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [2],
+      "expectedFacts": ["24"]
+    },
+    {
+      "id": "nebula-jornada-verano",
+      "question": "¿Qué horario hay en Nébula durante julio y agosto?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [2],
+      "expectedFacts": [
+        ["8:00", "8.00", "8 de la manana"],
+        ["15:00", "15.00", "3 de la tarde"]
+      ]
+    },
+    {
+      "id": "nebula-vacaciones-pendientes",
+      "question": "En Nébula, ¿hasta cuándo puedo usar las vacaciones que no he disfrutado?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [2],
+      "expectedFacts": ["31 de marzo"]
+    },
+    {
+      "id": "nebula-teletrabajo-dias",
+      "question": "¿Cuántos días por semana se puede teletrabajar en Laboratorios Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [3],
+      "expectedFacts": [["3 dias", "tres dias"]]
+    },
+    {
+      "id": "nebula-teletrabajo-ayuda",
+      "question": "¿Cuánto me pagan al mes en Nébula por teletrabajar?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [3],
+      "expectedFacts": ["35"]
+    },
+    {
+      "id": "nebula-dia-presencial",
+      "question": "¿Qué día de la semana es obligatorio ir a la oficina en Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [3],
+      "expectedFacts": ["martes"]
+    },
+    {
+      "id": "nebula-devolver-portatil",
+      "question": "Si dejo Laboratorios Nébula, ¿cuánto tiempo tengo para devolver el portátil?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [3],
+      "expectedFacts": [["10 dias", "diez dias"]]
+    },
+    {
+      "id": "nebula-hotel",
+      "question": "¿Cuál es el importe máximo de hotel por noche en Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [4],
+      "expectedFacts": ["95"]
+    },
+    {
+      "id": "nebula-kilometraje",
+      "question": "¿Cuánto se paga por kilómetro con coche propio en Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [4],
+      "expectedFacts": ["0.26"]
+    },
+    {
+      "id": "nebula-comida-extranjero",
+      "question": "En Nébula, ¿cuánto puedo gastar al día en comida en un viaje al extranjero?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [4],
+      "expectedFacts": ["48"]
+    },
+    {
+      "id": "nebula-contrasenas",
+      "question": "¿Cada cuánto hay que cambiar la contraseña en Nébula y qué longitud mínima debe tener?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [5],
+      "expectedFacts": ["90", "14"]
+    },
+    {
+      "id": "nebula-portatil-perdido",
+      "question": "He perdido el portátil del trabajo de Nébula, ¿qué tengo que hacer?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [5],
+      "expectedFacts": ["4417"]
+    },
+    {
+      "id": "nebula-formacion",
+      "question": "¿Qué presupuesto de formación tengo al año en Laboratorios Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [7],
+      "expectedFacts": ["1200"]
+    },
+    {
+      "id": "nebula-mentoria",
+      "question": "¿Cuánto dura el programa de mentoría Faro de Nébula?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [7],
+      "expectedFacts": [["6 meses", "seis meses"]]
+    },
+    {
+      "id": "nebula-vacaciones-y-formacion",
+      "question": "En Nébula, ¿cuántos días de vacaciones tengo y cuál es mi presupuesto de formación?",
+      "type": "answerable",
+      "document": "manual-nebula.pdf",
+      "expectedPages": [2, 7],
+      "expectedFacts": ["24", "1200"]
+    },
+    {
+      "id": "alba-vacaciones",
+      "question": "¿Cuántos días de vacaciones tiene el personal de Cooperativa Alba?",
+      "type": "answerable",
+      "document": "politica-alba.pdf",
+      "expectedPages": [2],
+      "expectedFacts": ["22"]
+    },
+    {
+      "id": "alba-teletrabajo",
+      "question": "¿Qué día se puede teletrabajar en Cooperativa Alba?",
+      "type": "answerable",
+      "document": "politica-alba.pdf",
+      "expectedPages": [3],
+      "expectedFacts": ["viernes"]
+    },
+    {
+      "id": "trap-director-financiero",
+      "question": "¿Quién es el director financiero de Laboratorios Nébula?",
+      "type": "trap"
+    },
+    {
+      "id": "trap-salario",
+      "question": "¿Cuál es el salario medio de los empleados de Nébula?",
+      "type": "trap"
+    },
+    {
+      "id": "trap-guarderia",
+      "question": "¿Ofrece Laboratorios Nébula ayuda para la guardería?",
+      "type": "trap"
+    },
+    {
+      "id": "trap-alba-formacion",
+      "question": "¿Qué presupuesto de formación tiene el personal de Cooperativa Alba?",
+      "type": "trap"
+    },
+    {
+      "id": "trap-fuera-de-tema",
+      "question": "¿Cuál es la capital de Francia?",
+      "type": "trap"
+    }
+  ]
+}
