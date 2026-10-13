@@ -1,0 +1,33 @@
+{
+  "name": "pdf-ollama-rag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "fixtures": "tsx scripts/create-sample-pdf.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/node": "^24.19.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.4.299",
+    "sqlite-vec": "0.1.9"
+  },
+  "bin": {
+    "pdf-ollama": "dist/cli.js"
+  }
+}
