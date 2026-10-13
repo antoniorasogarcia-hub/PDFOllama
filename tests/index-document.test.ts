@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Embedder } from "../src/embeddings/embedder.js";
-import { indexPdf } from "../src/ingest/index-document.js";
+import { indexPdf, indexPdfData } from "../src/ingest/index-document.js";
 import { SqliteVectorStore } from "../src/store/sqlite-vector-store.js";
 import { createPdf } from "./fixtures/pdf-builder.js";
 import { samplePages } from "./fixtures/sample-document.js";
@@ -104,6 +104,33 @@ describe("indexPdf", () => {
     const chunks = await store.search([1, 0], 10);
     expect(chunks.map((chunk) => chunk.text)).toEqual(["Segunda versión."]);
     expect(await store.listDocuments()).toHaveLength(1);
+  });
+
+  it("indexes PDF bytes from memory under the given source path", async () => {
+    const result = await indexPdfData(
+      createPdf(samplePages),
+      "upload/manual.pdf",
+      {
+        embedder,
+        store,
+        config,
+      },
+    );
+
+    expect(result.status).toBe("indexed");
+    expect(result.document.sourcePath).toBe("upload/manual.pdf");
+    expect(await store.findDocument(result.document.id)).toBeDefined();
+  });
+
+  it("rejects bytes that are not a PDF before embedding anything", async () => {
+    await expect(
+      indexPdfData(Buffer.from("hola"), "upload/x.pdf", {
+        embedder,
+        store,
+        config,
+      }),
+    ).rejects.toThrow("Input file is not a PDF");
+    expect(embedder.embedMany).not.toHaveBeenCalled();
   });
 
   async function writePdf(

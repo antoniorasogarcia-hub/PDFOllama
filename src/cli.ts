@@ -9,7 +9,10 @@ import { generateAnswer } from "./generation/answer-generator.js";
 import type { ChatModel } from "./generation/chat-model.js";
 import { OllamaChatModel } from "./generation/ollama-chat-model.js";
 import { indexPdf } from "./ingest/index-document.js";
-import { retrieveRelevantChunks } from "./retrieval/retrieval.js";
+import {
+  assertEmbeddingModelMatches,
+  retrieveRelevantChunks,
+} from "./retrieval/retrieval.js";
 import { SqliteVectorStore } from "./store/sqlite-vector-store.js";
 import type { VectorStore } from "./store/vector-store.js";
 import type { Citation, DocumentRecord, SearchFilter } from "./types.js";
@@ -219,7 +222,10 @@ async function retrieve(
   options: QueryOptions,
   context: CliContext,
 ) {
-  await ensureEmbeddingModelMatches(context);
+  await assertEmbeddingModelMatches(
+    context.store,
+    context.config.models.embedding,
+  );
   return retrieveRelevantChunks(
     text,
     context.embedder,
@@ -227,20 +233,6 @@ async function retrieve(
     readTopK(options, context.config),
     await readSearchFilter(options, context.store),
   );
-}
-
-async function ensureEmbeddingModelMatches(context: CliContext): Promise<void> {
-  const mismatched = (await context.store.listDocuments()).filter(
-    (document) => document.embeddingModel !== context.config.models.embedding,
-  );
-  if (mismatched.length > 0) {
-    const names = mismatched
-      .map((document) => basename(document.sourcePath))
-      .join(", ");
-    throw new UsageError(
-      `${names} was indexed with a different embedding model than ${context.config.models.embedding}. Ingest it again or restore PDF_OLLAMA_EMBEDDING_MODEL.`,
-    );
-  }
 }
 
 async function printChunks(

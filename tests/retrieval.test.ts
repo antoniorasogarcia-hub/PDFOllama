@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Embedder } from "../src/embeddings/embedder.js";
-import { retrieveRelevantChunks } from "../src/retrieval/retrieval.js";
+import {
+  assertEmbeddingModelMatches,
+  retrieveRelevantChunks,
+} from "../src/retrieval/retrieval.js";
 import type { VectorStore } from "../src/store/vector-store.js";
-import type { RetrievedChunk } from "../src/types.js";
+import type { DocumentRecord, RetrievedChunk } from "../src/types.js";
 
 describe("retrieveRelevantChunks", () => {
   const chunk: RetrievedChunk = {
@@ -43,5 +46,37 @@ describe("retrieveRelevantChunks", () => {
       retrieveRelevantChunks("   ", embedder, {} as VectorStore, 3),
     ).rejects.toThrow("The question is empty.");
     expect(embedder.embed).not.toHaveBeenCalled();
+  });
+});
+
+describe("assertEmbeddingModelMatches", () => {
+  const document = (embeddingModel: string): DocumentRecord => ({
+    id: embeddingModel,
+    sourcePath: `/docs/${embeddingModel}.pdf`,
+    pageCount: 1,
+    chunkCount: 1,
+    embeddingModel,
+    chunkSize: 450,
+    chunkOverlap: 75,
+    ingestedAt: "2026-01-01T00:00:00.000Z",
+  });
+  const storeWith = (documents: DocumentRecord[]) =>
+    ({ listDocuments: async () => documents }) as unknown as VectorStore;
+
+  it("accepts documents embedded with the configured model", async () => {
+    await expect(
+      assertEmbeddingModelMatches(storeWith([document("bge-m3")]), "bge-m3"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("names the documents embedded with another model", async () => {
+    await expect(
+      assertEmbeddingModelMatches(
+        storeWith([document("bge-m3"), document("nomic-embed-text")]),
+        "bge-m3",
+      ),
+    ).rejects.toThrow(
+      "nomic-embed-text.pdf was indexed with a different embedding model than bge-m3",
+    );
   });
 });
