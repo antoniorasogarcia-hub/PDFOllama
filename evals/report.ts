@@ -1,4 +1,4 @@
-import type { CaseResult, PageRef, Summary } from "./score.js";
+import type { CaseResult, PageRef, Summary, SummaryResult } from "./score.js";
 
 export interface RunInfo {
   label: string;
@@ -70,6 +70,45 @@ export function renderReport(
         "- [ ] Cita la página correcta",
       );
     }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/** Renders a run of the summary cases, including each summary in full. */
+export function renderSummaryReport(
+  info: RunInfo,
+  results: readonly SummaryResult[],
+): string {
+  const passed = results.filter((result) => result.score.passed).length;
+  const lines = [
+    `# Evals de resúmenes: ${info.label}`,
+    "",
+    `- Fecha: ${info.startedAt.toISOString()}`,
+    `- Modelo de chat: \`${info.chatModel}\``,
+    "",
+    "## Métricas",
+    "",
+    "| Métrica | Resultado |",
+    "| --- | --- |",
+    `| Resúmenes que cubren todos los temas sin cifras inventadas | ${ratio(passed, results.length)} |`,
+    "",
+    "| Documento | Temas que faltan | Cifras que no están en el documento | Tiempo |",
+    "| --- | --- | --- | --- |",
+    ...results.map(
+      ({ summaryCase, score, latencyMs }) =>
+        `| ${summaryCase.document} | ${score.missingTopics.join(", ") || "—"} | ${score.unsupportedNumbers.join(", ") || "—"} | ${seconds(latencyMs)} |`,
+    ),
+  ];
+  for (const result of results) {
+    lines.push(
+      "",
+      `## ${result.summaryCase.document}`,
+      "",
+      result.summary.trim(),
+      "",
+      "- [ ] Fiel al documento",
+      "- [ ] No omite nada importante",
+    );
   }
   return `${lines.join("\n")}\n`;
 }

@@ -4,9 +4,11 @@ import { renderReport } from "../evals/report.js";
 import {
   type CaseResult,
   containsFact,
+  extractNumbers,
   normalizeForMatch,
   scoreAnswer,
   scoreRetrieval,
+  scoreSummary,
   summarize,
 } from "../evals/score.js";
 import { NO_ANSWER } from "../src/generation/prompt.js";
@@ -51,6 +53,21 @@ describe("evaluation dataset", () => {
         expect(
           containsFact(expectedText, fact),
           `${evalCase.id}: ${JSON.stringify(fact)}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("has every expected summary topic in its document", async () => {
+    const dataset = await loadDataset();
+
+    expect(dataset.summaries.length).toBeGreaterThan(0);
+    for (const summaryCase of dataset.summaries) {
+      const text = (sampleDocuments[summaryCase.document] ?? []).join("\n");
+      for (const topic of summaryCase.expectedTopics) {
+        expect(
+          containsFact(text, topic),
+          `${summaryCase.id}: ${JSON.stringify(topic)}`,
         ).toBe(true);
       }
     }
@@ -241,4 +258,59 @@ describe("summarize and renderReport", () => {
       latencyMs,
     };
   }
+});
+
+describe("summary scoring", () => {
+  const summaryCase = {
+    id: "resumen",
+    document: "manual.pdf",
+    expectedTopics: [["vacaciones"], ["teletrabajo", "remoto"]],
+  };
+  const documentText =
+    "Hay 24 días de vacaciones. Se teletrabaja 3 días. Formación: 1.200 euros.";
+
+  it("extracts numbers but not page references", () => {
+    expect(extractNumbers("Tienes 24 días [p. 2] y 1.200 € [p. 4-5].")).toEqual(
+      ["24", "1200"],
+    );
+    expect(extractNumbers("De 8:30 a 17:30, 0,26 euros/km.")).toEqual([
+      "8:30",
+      "17:30",
+      "0.26",
+    ]);
+  });
+
+  it("passes a summary that covers every topic with real figures", () => {
+    expect(
+      scoreSummary(
+        summaryCase,
+        "Hay 24 días de vacaciones [p. 2] y trabajo en remoto 3 días [p. 3].",
+        documentText,
+      ),
+    ).toEqual({ missingTopics: [], unsupportedNumbers: [], passed: true });
+  });
+
+  it("reports missing topics and invented figures", () => {
+    expect(
+      scoreSummary(
+        summaryCase,
+        "Hay 30 días de vacaciones [p. 2].",
+        documentText,
+      ),
+    ).toEqual({
+      missingTopics: ["teletrabajo | remoto"],
+      unsupportedNumbers: ["30"],
+      passed: false,
+    });
+  });
+
+  it("rejects summary cases for unknown documents", () => {
+    expect(() =>
+      parseDataset({
+        documents: ["a.pdf"],
+        cases: [trapCase],
+        summaries: [{ ...summaryCase, document: "b.pdf" }],
+      }),
+    ).toThrow('Summary "resumen" must name one of the dataset documents.');
+  });
 });

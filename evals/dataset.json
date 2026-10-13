@@ -181,5 +181,29 @@
       "question": "¿Cuál es la capital de Francia?",
       "type": "trap"
     }
+  ],
+  "summaries": [
+    {
+      "id": "resumen-nebula",
+      "document": "manual-nebula.pdf",
+      "expectedTopics": [
+        ["vacaciones"],
+        ["horario", "jornada"],
+        ["teletrabajo", "remoto"],
+        ["gastos", "dietas", "viaje"],
+        ["seguridad", "contrasena", "contrasenas"],
+        ["formacion"]
+      ]
+    },
+    {
+      "id": "resumen-alba",
+      "document": "politica-alba.pdf",
+      "expectedTopics": [
+        ["vacaciones"],
+        ["cosecha"],
+        ["mudanza"],
+        ["teletrabajo", "teletrabajar"]
+      ]
+    }
   ]
 }

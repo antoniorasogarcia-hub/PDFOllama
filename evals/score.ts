@@ -1,5 +1,10 @@
 import { isNoAnswer } from "../src/generation/prompt.js";
-import type { AnswerableCase, EvalCase, ExpectedFact } from "./dataset.js";
+import type {
+  AnswerableCase,
+  EvalCase,
+  ExpectedFact,
+  SummaryCase,
+} from "./dataset.js";
 
 /** A page of a document, used for retrieved chunks and citations. */
 export interface PageRef {
@@ -125,6 +130,51 @@ export function scoreAnswer(
         evalCase.expectedPages.includes(citation.pageNumber),
     ),
   };
+}
+
+export interface SummaryScore {
+  missingTopics: string[];
+  /** Numbers in the summary that do not appear in the document. */
+  unsupportedNumbers: string[];
+  passed: boolean;
+}
+
+export interface SummaryResult {
+  summaryCase: SummaryCase;
+  summary: string;
+  score: SummaryScore;
+  latencyMs: number;
+}
+
+/**
+ * Scores a summary deterministically: it must mention every expected topic,
+ * and every number in it must appear in the document, which catches invented
+ * figures. Page references such as [p. 4] are ignored.
+ */
+export function scoreSummary(
+  summaryCase: SummaryCase,
+  summary: string,
+  documentText: string,
+): SummaryScore {
+  const missingTopics = summaryCase.expectedTopics
+    .filter((topic) => !containsFact(summary, topic))
+    .map((topic) => (typeof topic === "string" ? topic : topic.join(" | ")));
+  const unsupportedNumbers = extractNumbers(summary).filter(
+    (number) => !containsFact(documentText, number),
+  );
+  return {
+    missingTopics,
+    unsupportedNumbers,
+    passed: missingTopics.length === 0 && unsupportedNumbers.length === 0,
+  };
+}
+
+/** Returns the distinct numbers in a text, ignoring page references. */
+export function extractNumbers(text: string): string[] {
+  const withoutPageReferences = text.replace(/\[[^\]]*\]/gu, " ");
+  const numbers =
+    normalizeForMatch(withoutPageReferences).match(/\d+(?:[.:]\d+)*/gu) ?? [];
+  return [...new Set(numbers)];
 }
 
 /** Aggregates case results into the metrics of the pull request template. */
