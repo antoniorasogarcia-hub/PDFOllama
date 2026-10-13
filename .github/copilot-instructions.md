@@ -50,6 +50,7 @@ src/
   retrieval/      buscar los k fragmentos relevantes
   ollama/         cliente HTTP compartido (timeouts, streaming, errores)
   generation/     interfaz ChatModel + prompt + llamada al modelo + citas
+  summary/        resumen del documento entero por partes, con caché
   cli.ts          interfaz de línea de comandos (incluye `serve` para la web)
   api/            servidor HTTP local: subir, listar, borrar y preguntar
 public/           página web (HTML, CSS y JS sin build)
