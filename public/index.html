@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Ollama</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>PDF Ollama</h1>
+      <p>Pregunta a tus PDFs. Todo se procesa en tu equipo.</p>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar" aria-label="Documentos">
+        <div id="dropzone" class="dropzone">
+          <p class="dropzone-title">Arrastra tus PDFs aquí</p>
+          <p class="muted">o</p>
+          <button id="choose-files" type="button" class="secondary">
+            Elegir archivos
+          </button>
+          <input
+            id="file-input"
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            hidden
+          />
+        </div>
+
+        <ul id="upload-list" class="upload-list" aria-live="polite"></ul>
+
+        <h2>Documentos</h2>
+        <p id="documents-empty" class="muted">Aún no has subido ningún PDF.</p>
+        <ul id="document-list" class="document-list"></ul>
+      </aside>
+
+      <section class="chat" aria-label="Preguntas">
+        <div class="chat-toolbar">
+          <label for="document-filter">Preguntar a</label>
+          <select id="document-filter">
+            <option value="">Todos los documentos</option>
+          </select>
+        </div>
+
+        <div id="messages" class="messages" aria-live="polite">
+          <p id="chat-empty" class="chat-empty">
+            Sube un PDF y hazle preguntas. Las respuestas solo usan el contenido
+            de tus documentos e indican la página de donde salen.
+          </p>
+        </div>
+
+        <form id="question-form" class="question-form">
+          <textarea
+            id="question"
+            rows="2"
+            placeholder="Escribe tu pregunta… (Enter para enviar, Mayús+Enter para nueva línea)"
+            aria-label="Pregunta"
+            maxlength="2000"
+          ></textarea>
+          <button id="send" type="submit">Enviar</button>
+        </form>
+        <p id="status" class="status" role="status"></p>
+      </section>
+    </main>
+  </body>
+</html>

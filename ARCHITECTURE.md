@@ -39,7 +39,16 @@ flowchart LR
 - Timeouts are inactivity timeouts: a long streamed answer is fine as long as tokens keep arriving.
 - Defaults are conservative for an 8 GB, CPU-only machine: 450 tokens per chunk, 75 tokens of overlap, `topK` 3. The default chat model is `llama3.2:3b`; an answer takes roughly 30–60 s. `llama3.2:1b` is faster but, in manual tests, often answered "I don't know" when the answer was present.
 - Initial configuration keys use the `PDF_OLLAMA_` prefix; `OLLAMA_BASE_URL` follows Ollama's common environment variable name.
-- `evals/` is reserved for deterministic retrieval/answer checks and manual review; it is not implemented yet.
+- **Web interface**: `pdf-ollama serve` (`npm run web`) starts a `node:http` server in `src/api/` that serves a single page from `public/` (plain HTML, CSS, and JavaScript in Spanish, no build step) and a small API:
+  - `GET /api/documents`, `DELETE /api/documents/:id`
+  - `POST /api/documents?name=<file name>` with the raw PDF body; streams NDJSON `started`, `progress`, and `done` or `error` events. Uploads are indexed from memory under the source path `upload/<file name>` and are not written to disk, so uploading a new version with the same name replaces the old one.
+  - `POST /api/ask` with JSON `{ question, documentId? }`; streams `text_delta` events, then `citations` (with file names), or `error`.
+- The server listens on `127.0.0.1` only, rejects requests whose `Host` is not localhost (DNS rebinding), and requires `application/pdf` or `application/json` bodies, so other websites cannot call it through the browser. Uploads and answers run one at a time because CPU-only Ollama slows down with parallel requests. The page uses `textContent` only and a `default-src 'self'` content security policy.
+- **Evals** (`npm run evals`, code in `evals/`) measure the pipeline against `evals/dataset.json`: questions over the two fixture PDFs, each with its document, expected pages, and expected facts, plus trap questions whose answer is in no document. Scoring is deterministic and never uses a model as judge: retrieval hit (all expected pages among the top k) and MRR, answer correctness (every expected fact present, ignoring case, accents, and Spanish number formatting, and not a "don't know"), page cited, and "don't know" for traps. Each run ingests the fixtures into a fresh `data/evals.db`, prints the pull request template metrics, and writes a Markdown report with a random sample for manual review to `evals/results/` (committed; the raw JSON is ignored). `--retrieval-only` skips generation and takes seconds; a full run takes about 10 minutes with `llama3.2:3b` on CPU. A unit test checks that every expected fact really appears on its expected page.
+- **Eval findings** (reports in `evals/results/`, `llama3.2:3b`):
+  - Baseline: retrieval 18/19, correct answers 18/19, traps 4/5, expected page cited 19/19, about 20 s per answer.
+  - Labelling each chunk with its document name in the prompt, adding rules about other documents and paraphrased questions, or raising `k` to 4 did not improve answers (15–17/19). With `k` = 4 retrieval reached 19/19, but the extra chunk confused the model. The original prompt and `k` = 3 were kept.
+  - Known limitations: with several similar PDFs indexed, the model can attribute a fact from one document to another (the "Cooperativa Alba" trap); limit the question to one document (`--doc` in the CLI, the selector in the web page) when that matters. Questions that combine two topics may miss one with `k` = 3. Answers are sensitive to wording: "¿Cuánto me pagan al mes por teletrabajar?" once got "No lo sé" while the same question naming the company was answered correctly.
 
 ## Environment variables
 
@@ -57,5 +66,7 @@ flowchart LR
 | `PDF_OLLAMA_TIMEOUT_MS` | `120000` | Maximum time without a response from Ollama |
 | `PDF_OLLAMA_DATA_DIR` | `./data` | Local application data directory |
 | `PDF_OLLAMA_DATABASE_FILE` | `<data dir>/pdf-ollama.db` | SQLite database file |
+| `PDF_OLLAMA_PORT` | `3000` | Web interface port (always on `127.0.0.1`) |
+| `PDF_OLLAMA_MAX_UPLOAD_MB` | `100` | Maximum PDF size for web uploads |
 
 Invalid numeric values stop the CLI with a message naming the variable.

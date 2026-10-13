@@ -11,7 +11,7 @@ App de chat con PDF (RAG): subo un PDF, hago preguntas en lenguaje natural y rec
 
 - Antes de generar código, explica brevemente qué vas a hacer y por qué, y qué alternativa descartaste.
 - Cambios pequeños: un módulo o una tarea por vez, nunca el proyecto entero de golpe.
-- El núcleo de RAG (troceado, recuperación, prompt y citas) ya está implementado. Antes de cambiarlo, o de implementar los evals, explícame la propuesta y espera mi confirmación: quiero entender cada cambio.
+- El núcleo de RAG (troceado, recuperación, prompt y citas) y los evals ya están implementados. Antes de cambiarlos, explícame la propuesta y espera mi confirmación: quiero entender cada cambio. Todo cambio de prompt, troceado, k o modelo se mide con `npm run evals` antes y después.
 - Si algo es ambiguo, pregúntame antes de decidir.
 - No añadas dependencias que no estén en el stack. Si crees que hace falta una, propónmela y espera.
 - Cuando revises mi código, señala problemas de estructura, errores no contemplados y falta de tests, y dime el porqué.
@@ -25,7 +25,7 @@ App de chat con PDF (RAG): subo un PDF, hago preguntas en lenguaje natural y rec
 - Cliente de Ollama: `fetch` nativo, sin librería.
 - Lint y formato con Biome (`npm run lint`, `npm run format`).
 - Tests con Vitest.
-- Primero una CLI; la API web y la interfaz vendrán después.
+- CLI y una interfaz web local: servidor `node:http` y una página HTML/CSS/JS sin framework ni build, con textos en español.
 - Todo debe poder ejecutarse sin coste.
 
 # Limitaciones de hardware (importante)
@@ -50,9 +50,10 @@ src/
   retrieval/      buscar los k fragmentos relevantes
   ollama/         cliente HTTP compartido (timeouts, streaming, errores)
   generation/     interfaz ChatModel + prompt + llamada al modelo + citas
-  cli.ts          primera interfaz
-  api/            más adelante
-evals/            preguntas con respuesta y página esperadas, y script de ejecución (pendiente)
+  cli.ts          interfaz de línea de comandos (incluye `serve` para la web)
+  api/            servidor HTTP local: subir, listar, borrar y preguntar
+public/           página web (HTML, CSS y JS sin build)
+evals/            preguntas con respuesta y página esperadas, puntuación determinista, script e informes
 scripts/          utilidades de desarrollo (generar el PDF de ejemplo)
 tests/            un fichero de test por módulo
 tests/fixtures/   PDF sintético en español con datos inventados en páginas conocidas

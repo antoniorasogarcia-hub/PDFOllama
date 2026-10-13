@@ -5,6 +5,7 @@ import type { Embedder } from "../embeddings/embedder.js";
 import type { VectorStore } from "../store/vector-store.js";
 import type { Chunk, DocumentRecord, TextChunk } from "../types.js";
 import {
+  assertPdfHeader,
   extractPdfPagesFromData,
   readPdfFile,
   splitPagesIntoChunks,
@@ -34,8 +35,24 @@ export async function indexPdf(
   pdfPath: string,
   dependencies: IndexingDependencies,
 ): Promise<IndexingResult> {
+  return indexPdfData(
+    await readPdfFile(pdfPath),
+    resolve(pdfPath),
+    dependencies,
+  );
+}
+
+/**
+ * Indexes PDF bytes that are already in memory, such as an upload. The source
+ * path identifies the document for replacement and display.
+ */
+export async function indexPdfData(
+  file: Uint8Array,
+  sourcePath: string,
+  dependencies: IndexingDependencies,
+): Promise<IndexingResult> {
+  assertPdfHeader(file);
   const { store, config } = dependencies;
-  const file = await readPdfFile(pdfPath);
   const documentId = createHash("sha256").update(file).digest("hex");
 
   const existing = await store.findDocument(documentId);
@@ -49,7 +66,7 @@ export async function indexPdf(
 
   const document: DocumentRecord = {
     id: documentId,
-    sourcePath: resolve(pdfPath),
+    sourcePath,
     pageCount: pages.length,
     chunkCount: chunks.length,
     embeddingModel: config.models.embedding,

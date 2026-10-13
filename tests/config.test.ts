@@ -10,6 +10,7 @@ describe("config", () => {
     expect(config.retrieval.topK).toBe(3);
     expect(config.ollama.baseUrl).toBe("http://localhost:11434");
     expect(config.paths.databaseFile).toBe("data/pdf-ollama.db");
+    expect(config.server).toEqual({ port: 3000, maxUploadBytes: 104857600 });
   });
 
   it("applies environment overrides", () => {

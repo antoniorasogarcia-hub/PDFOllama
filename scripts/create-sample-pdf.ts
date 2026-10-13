@@ -1,10 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { join } from "node:path";
 import { createPdf } from "../tests/fixtures/pdf-builder.js";
-import { samplePages } from "../tests/fixtures/sample-document.js";
+import { sampleDocuments } from "../tests/fixtures/sample-document.js";
 
-const outputPath = process.argv[2] ?? "tests/fixtures/manual-nebula.pdf";
+const outputDirectory = process.argv[2] ?? "tests/fixtures";
 
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(outputPath, createPdf(samplePages));
-console.log(`Sample PDF written to ${outputPath}`);
+await mkdir(outputDirectory, { recursive: true });
+for (const [fileName, pages] of Object.entries(sampleDocuments)) {
+  const outputPath = join(outputDirectory, fileName);
+  await writeFile(outputPath, createPdf(pages));
+  console.log(`Sample PDF written to ${outputPath}`);
+}

@@ -16,10 +16,15 @@ const standardFontDataUrl = join(
 /** Reads a PDF file and checks its header before parsing it. */
 export async function readPdfFile(pdfPath: string): Promise<Buffer> {
   const file = await readFile(pdfPath);
-  if (!file.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
+  assertPdfHeader(file);
+  return file;
+}
+
+/** Fails when the bytes do not start with the PDF signature. */
+export function assertPdfHeader(data: Uint8Array): void {
+  if (!Buffer.from(data.subarray(0, 5)).equals(Buffer.from("%PDF-"))) {
     throw new Error("Input file is not a PDF (missing %PDF- header).");
   }
-  return file;
 }
 
 /** Extracts text from a PDF while preserving page numbers. */

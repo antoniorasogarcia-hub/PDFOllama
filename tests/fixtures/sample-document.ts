@@ -56,3 +56,29 @@ Cada empleado dispone de un presupuesto de formación de 1.200 euros al año, qu
 
 Las nuevas incorporaciones participan en el programa de mentoría Faro, que dura 6 meses. Durante ese tiempo, cada persona tiene asignado un mentor de otro departamento con el que se reúne cada dos semanas.`,
 ];
+
+/**
+ * A second fictional document about another company, with similar topics but
+ * different figures, to check that answers do not mix up documents.
+ */
+export const secondSamplePages: readonly string[] = [
+  `Política laboral de Cooperativa Alba
+
+Cooperativa Alba es una cooperativa agrícola de Teruel fundada en 1987. La forman 58 socios trabajadores que se dedican al cultivo y la venta de almendra y aceite.`,
+
+  `Vacaciones y permisos
+
+El personal de Cooperativa Alba dispone de 22 días laborables de vacaciones al año, que deben solicitarse con 30 días de antelación a la asamblea de socios. Las vacaciones no pueden disfrutarse durante la campaña de cosecha, de septiembre a noviembre.
+
+En caso de mudanza se concede un permiso de 2 días.`,
+
+  `Teletrabajo
+
+El personal de oficina de Cooperativa Alba puede teletrabajar un día por semana, siempre los viernes. El resto del personal trabaja de forma presencial en el almacén y en el campo. La cooperativa no ofrece ninguna compensación económica por teletrabajar.`,
+];
+
+/** Fixture PDFs generated from the documents above, by file name. */
+export const sampleDocuments: Readonly<Record<string, readonly string[]>> = {
+  "manual-nebula.pdf": samplePages,
+  "politica-alba.pdf": secondSamplePages,
+};
