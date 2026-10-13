@@ -39,6 +39,11 @@ flowchart LR
 - Timeouts are inactivity timeouts: a long streamed answer is fine as long as tokens keep arriving.
 - Defaults are conservative for an 8 GB, CPU-only machine: 450 tokens per chunk, 75 tokens of overlap, `topK` 3. The default chat model is `llama3.2:3b`; an answer takes roughly 30–60 s. `llama3.2:1b` is faster but, in manual tests, often answered "I don't know" when the answer was present.
 - Initial configuration keys use the `PDF_OLLAMA_` prefix; `OLLAMA_BASE_URL` follows Ollama's common environment variable name.
+- **Web interface**: `pdf-ollama serve` (`npm run web`) starts a `node:http` server in `src/api/` that serves a single page from `public/` (plain HTML, CSS, and JavaScript in Spanish, no build step) and a small API:
+  - `GET /api/documents`, `DELETE /api/documents/:id`
+  - `POST /api/documents?name=<file name>` with the raw PDF body; streams NDJSON `started`, `progress`, and `done` or `error` events. Uploads are indexed from memory under the source path `upload/<file name>` and are not written to disk, so uploading a new version with the same name replaces the old one.
+  - `POST /api/ask` with JSON `{ question, documentId? }`; streams `text_delta` events, then `citations` (with file names), or `error`.
+- The server listens on `127.0.0.1` only, rejects requests whose `Host` is not localhost (DNS rebinding), and requires `application/pdf` or `application/json` bodies, so other websites cannot call it through the browser. Uploads and answers run one at a time because CPU-only Ollama slows down with parallel requests. The page uses `textContent` only and a `default-src 'self'` content security policy.
 - `evals/` is reserved for deterministic retrieval/answer checks and manual review; it is not implemented yet.
 
 ## Environment variables
@@ -57,5 +62,7 @@ flowchart LR
 | `PDF_OLLAMA_TIMEOUT_MS` | `120000` | Maximum time without a response from Ollama |
 | `PDF_OLLAMA_DATA_DIR` | `./data` | Local application data directory |
 | `PDF_OLLAMA_DATABASE_FILE` | `<data dir>/pdf-ollama.db` | SQLite database file |
+| `PDF_OLLAMA_PORT` | `3000` | Web interface port (always on `127.0.0.1`) |
+| `PDF_OLLAMA_MAX_UPLOAD_MB` | `100` | Maximum PDF size for web uploads |
 
 Invalid numeric values stop the CLI with a message naming the variable.

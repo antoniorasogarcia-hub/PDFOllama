@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",
     "lint": "biome check .",
     "format": "biome check --write .",
+    "web": "tsx src/cli.ts serve",
     "fixtures": "tsx scripts/create-sample-pdf.ts"
   },
   "devDependencies": {

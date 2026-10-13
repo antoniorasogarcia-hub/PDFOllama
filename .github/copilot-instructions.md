@@ -25,7 +25,7 @@ App de chat con PDF (RAG): subo un PDF, hago preguntas en lenguaje natural y rec
 - Cliente de Ollama: `fetch` nativo, sin librería.
 - Lint y formato con Biome (`npm run lint`, `npm run format`).
 - Tests con Vitest.
-- Primero una CLI; la API web y la interfaz vendrán después.
+- CLI y una interfaz web local: servidor `node:http` y una página HTML/CSS/JS sin framework ni build, con textos en español.
 - Todo debe poder ejecutarse sin coste.
 
 # Limitaciones de hardware (importante)
@@ -50,8 +50,9 @@ src/
   retrieval/      buscar los k fragmentos relevantes
   ollama/         cliente HTTP compartido (timeouts, streaming, errores)
   generation/     interfaz ChatModel + prompt + llamada al modelo + citas
-  cli.ts          primera interfaz
-  api/            más adelante
+  cli.ts          interfaz de línea de comandos (incluye `serve` para la web)
+  api/            servidor HTTP local: subir, listar, borrar y preguntar
+public/           página web (HTML, CSS y JS sin build)
 evals/            preguntas con respuesta y página esperadas, y script de ejecución (pendiente)
 scripts/          utilidades de desarrollo (generar el PDF de ejemplo)
 tests/            un fichero de test por módulo
