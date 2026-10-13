@@ -44,9 +44,13 @@ Re-ingesting an unchanged PDF is skipped; ingesting a changed file at the same p
 npm test            # unit tests, no Ollama needed
 npm run typecheck   # source and tests
 npm run lint        # Biome lint + format check (npm run format to fix)
-npm run fixtures    # regenerate tests/fixtures/manual-nebula.pdf
+npm run fixtures    # regenerate the sample PDFs in tests/fixtures
+npm run evals       # measure retrieval and answers with Ollama (~10 min)
+npm run evals -- --retrieval-only   # retrieval only, in seconds
 ```
 
-`tests/fixtures/manual-nebula.pdf` is a synthetic, fictional employee handbook in Spanish. Every fact lives on a known page, page 6 is empty to simulate a scanned page, and nothing in it can be answered from a model's prior knowledge.
+`tests/fixtures/manual-nebula.pdf` is a synthetic, fictional employee handbook in Spanish. Every fact lives on a known page, page 6 is empty to simulate a scanned page, and nothing in it can be answered from a model's prior knowledge. `tests/fixtures/politica-alba.pdf` is a shorter policy of another fictional company with similar topics but different figures, used to check that answers do not mix up documents.
+
+Run the evals before and after changing the prompt, chunking, `k`, or a model, and paste the metrics into the pull request. Reports are kept in `evals/results/` to compare runs.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and configuration.
