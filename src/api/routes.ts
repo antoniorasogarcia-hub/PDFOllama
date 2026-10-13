@@ -6,6 +6,7 @@ import {
   assertEmbeddingModelMatches,
   retrieveRelevantChunks,
 } from "../retrieval/retrieval.js";
+import { summarizeDocument } from "../summary/document-summary.js";
 import type { DocumentRecord } from "../types.js";
 import {
   HttpError,
@@ -140,6 +141,36 @@ export async function ask(
   response.end();
 }
 
+/**
+ * POST /api/documents/:id/summary with JSON { refresh? }. Streams "progress"
+ * and "text_delta" events and ends with "done" (cached or not) or "error".
+ */
+export async function summarize(
+  request: IncomingMessage,
+  response: ServerResponse,
+  context: ServerContext,
+  documentId: string,
+): Promise<void> {
+  requireContentType(request, "application/json");
+  const refresh = parseSummaryRequest(await readBody(request, MAX_JSON_BYTES));
+  await findDocumentOrFail(documentId, context);
+
+  const send = startEventStream(response);
+  try {
+    for await (const event of summarizeDocument(documentId, context, {
+      refresh,
+    })) {
+      if (response.destroyed) {
+        break;
+      }
+      send(event);
+    }
+  } catch (error) {
+    send({ type: "error", message: errorMessage(error) });
+  }
+  response.end();
+}
+
 /** Keeps a safe, readable file name ending in .pdf. */
 export function sanitizeFileName(name: string): string {
   const cleaned = basename(name.replaceAll("\\", "/"))
@@ -178,6 +209,23 @@ function parseAskRequest(body: Buffer): {
     throw new HttpError(400, "documentId must be a string.");
   }
   return documentId === undefined ? { question } : { question, documentId };
+}
+
+function parseSummaryRequest(body: Buffer): boolean {
+  if (body.length === 0) {
+    return false;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body.toString("utf8"));
+  } catch {
+    throw new HttpError(400, "The request body is not valid JSON.");
+  }
+  const { refresh } = (parsed ?? {}) as Record<string, unknown>;
+  if (refresh !== undefined && typeof refresh !== "boolean") {
+    throw new HttpError(400, "refresh must be a boolean.");
+  }
+  return refresh === true;
 }
 
 async function findDocumentOrFail(

@@ -10,18 +10,20 @@ import type { AppConfig } from "../config.js";
 import type { Embedder } from "../embeddings/embedder.js";
 import type { ChatModel } from "../generation/chat-model.js";
 import type { VectorStore } from "../store/vector-store.js";
+import type { SummaryCache } from "../summary/summary-cache.js";
 import { HttpError, sendJson } from "./http-io.js";
 import {
   ask,
   deleteDocument,
   listDocuments,
+  summarize,
   uploadDocument,
 } from "./routes.js";
 
 export interface ServerContext {
   config: AppConfig;
   embedder: Embedder;
-  store: VectorStore;
+  store: VectorStore & SummaryCache;
   chatModel: ChatModel;
 }
 
@@ -80,6 +82,15 @@ async function handleRequest(
   );
   if (request.method === "DELETE" && documentMatch?.[1] !== undefined) {
     return deleteDocument(response, context, documentMatch[1]);
+  }
+  const summaryMatch = /^\/api\/documents\/([0-9a-f]{64})\/summary$/u.exec(
+    url.pathname,
+  );
+  if (request.method === "POST" && summaryMatch?.[1] !== undefined) {
+    const documentId = summaryMatch[1];
+    return runExclusive(() =>
+      summarize(request, response, context, documentId),
+    );
   }
   throw new HttpError(404, "Not found.");
 }

@@ -96,6 +96,24 @@ describe("cli", () => {
     expect(output.match(/Tienes 24 días/gu)).toHaveLength(2);
   });
 
+  it("summarizes a whole document and reuses the saved summary", async () => {
+    await runCli(["ingest", pdfPath], context);
+    output = "";
+
+    await runCli(["summarize", "manual.pdf"], context);
+    const first = output;
+    output = "";
+    await runCli(["summarize", "manual.pdf"], context);
+
+    expect(first).toBe("Tienes 24 días laborables [p. 2].\n");
+    expect(output).toBe(
+      "Tienes 24 días laborables [p. 2].\n(Saved summary. Use --refresh to regenerate it.)\n",
+    );
+    await expect(runCli(["summarize"], context)).rejects.toThrow(
+      "summarize needs a document id prefix or file name.",
+    );
+  });
+
   it("refuses to search documents indexed with another embedding model", async () => {
     await runCli(["ingest", pdfPath], context);
     context.config = loadConfig({ PDF_OLLAMA_EMBEDDING_MODEL: "other-model" });

@@ -18,6 +18,7 @@ import {
 } from "./retrieval/retrieval.js";
 import { SqliteVectorStore } from "./store/sqlite-vector-store.js";
 import type { VectorStore } from "./store/vector-store.js";
+import { summarizeDocument } from "./summary/document-summary.js";
 import type { Citation, DocumentRecord, SearchFilter } from "./types.js";
 
 const USAGE = `Usage: pdf-ollama <command> [options]
@@ -29,12 +30,14 @@ Commands:
   search "<text>"          Show the chunks most similar to a text
   ask "<question>"         Answer a question with page citations
   chat                     Ask several questions interactively
+  summarize <document>     Summarize a whole document (id prefix or file name)
   serve                    Start the web interface on http://localhost:3000
 
 Options:
   --doc <document>         Limit search to one document (id prefix or file name)
   --top-k <n>              Number of chunks to retrieve (default: PDF_OLLAMA_TOP_K)
   --show-context           Print the retrieved chunks before the answer
+  --refresh                Regenerate a summary instead of using the saved one
 
 Configuration is read from environment variables (see ARCHITECTURE.md).`;
 
@@ -55,6 +58,7 @@ export async function runCli(
       doc: { type: "string" },
       "top-k": { type: "string" },
       "show-context": { type: "boolean" },
+      refresh: { type: "boolean" },
     },
   });
   const [command, ...rest] = positionals;
@@ -72,6 +76,8 @@ export async function runCli(
       return askCommand(rest.join(" "), values, context);
     case "chat":
       return chatCommand(values, context);
+    case "summarize":
+      return summarizeCommand(rest, values.refresh === true, context);
     case "serve":
       return serveCommand(context);
     default:
@@ -299,6 +305,34 @@ async function documentNames(store: VectorStore): Promise<Map<string, string>> {
   );
 }
 
+async function summarizeCommand(
+  references: readonly string[],
+  refresh: boolean,
+  context: CliContext,
+): Promise<void> {
+  const [reference] = references;
+  if (reference === undefined) {
+    throw new UsageError("summarize needs a document id prefix or file name.");
+  }
+  const document = await findDocumentByReference(reference, context.store);
+
+  for await (const event of summarizeDocument(document.id, context, {
+    refresh,
+  })) {
+    if (event.type === "progress") {
+      context.output.write(`  summarized part ${event.done}/${event.total}\n`);
+    } else if (event.type === "text_delta") {
+      context.output.write(event.text);
+    } else {
+      context.output.write(
+        event.cached
+          ? "\n(Saved summary. Use --refresh to regenerate it.)\n"
+          : "\n",
+      );
+    }
+  }
+}
+
 /** Starts the web server and keeps running until Ctrl+C. */
 async function serveCommand(context: CliContext): Promise<void> {
   const { port } = context.config.server;
@@ -364,7 +398,7 @@ export class UsageError extends Error {
 export async function main(
   args: readonly string[] = process.argv.slice(2),
 ): Promise<void> {
-  let store: VectorStore | undefined;
+  let store: SqliteVectorStore | undefined;
   try {
     const config = loadConfig();
     store = new SqliteVectorStore(config.paths.databaseFile);

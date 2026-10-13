@@ -58,13 +58,21 @@ function documentItem(doc) {
   const info = createElement("div", "document-info");
   info.append(name, meta);
 
+  const summarize = createElement("button", "summary-button", "Resumir");
+  summarize.type = "button";
+  summarize.setAttribute("aria-label", `Resumir ${doc.fileName}`);
+  summarize.addEventListener("click", () => summarizeDocument(doc));
+
   const remove = createElement("button", "delete-button", "Eliminar");
   remove.type = "button";
   remove.setAttribute("aria-label", `Eliminar ${doc.fileName}`);
   remove.addEventListener("click", () => deleteDocument(doc));
 
+  const actions = createElement("div", "document-actions");
+  actions.append(summarize, remove);
+
   const item = createElement("li", "document-item");
-  item.append(info, remove);
+  item.append(info, actions);
   return item;
 }
 
@@ -234,6 +242,11 @@ async function askQuestion(question) {
       }
     });
     answer.done();
+    if (asksForSummary(question)) {
+      answer.note(
+        "Para resumir un documento entero, usa el botón «Resumir» junto a él: las preguntas solo leen los fragmentos más parecidos a la pregunta.",
+      );
+    }
   } catch (error) {
     answer.fail(translateError(error.message));
   } finally {
@@ -242,27 +255,94 @@ async function askQuestion(question) {
   }
 }
 
+function asksForSummary(question) {
+  return /\b(res[uú]m(e|en|eme|elo|ir|ime)|s[ií]ntesis)\b/iu.test(question);
+}
+
+// ---------------------------------------------------------------- summaries
+
+async function summarizeDocument(doc, refresh = false) {
+  if (state.busy) {
+    return;
+  }
+  elements.chatEmpty.hidden = true;
+  addUserMessage(`Resume «${doc.fileName}»`);
+  const answer = addAssistantMessage("Leyendo el documento…");
+
+  setBusy(true);
+  try {
+    const response = await fetch(`/api/documents/${doc.id}/summary`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!response.ok) {
+      throw new Error(await errorFromResponse(response));
+    }
+
+    await readEvents(response, (event) => {
+      if (event.type === "progress") {
+        answer.setPending(`Resumiendo parte ${event.done} de ${event.total}…`);
+      } else if (event.type === "text_delta") {
+        answer.append(event.text);
+      } else if (event.type === "done") {
+        answer.done();
+        if (event.cached) {
+          answer.note("Resumen guardado de una vez anterior.", {
+            label: "Volver a generarlo",
+            onClick: () => summarizeDocument(doc, true),
+          });
+        }
+      } else if (event.type === "error") {
+        throw new Error(event.message);
+      }
+    });
+  } catch (error) {
+    answer.fail(translateError(error.message));
+  } finally {
+    setBusy(false);
+  }
+}
+
 function addUserMessage(text) {
   elements.messages.append(createElement("div", "message-bubble user", text));
   scrollToBottom();
 }
 
-function addAssistantMessage() {
+function addAssistantMessage(pendingLabel = "Pensando…") {
   const bubble = createElement("div", "message-bubble assistant pending");
-  const text = createElement("div", "answer-text", "Pensando…");
+  const text = createElement("div", "answer-text", pendingLabel);
   bubble.append(text);
   elements.messages.append(bubble);
   scrollToBottom();
 
   // Answers can take a while on CPU, so show how long we have been waiting.
   const startedAt = Date.now();
+  let label = pendingLabel;
   const timer = setInterval(() => {
     const seconds = Math.round((Date.now() - startedAt) / 1000);
-    text.textContent = `Pensando… (${seconds} s)`;
+    text.textContent = `${label} (${seconds} s)`;
   }, 1000);
   let answer = "";
 
   return {
+    setPending(newLabel) {
+      label = newLabel;
+      if (answer === "") {
+        text.textContent = newLabel;
+      }
+    },
+    note(message, action) {
+      const note = createElement("div", "answer-note", message);
+      if (action) {
+        const button = createElement("button", "link-button", action.label);
+        button.type = "button";
+        button.addEventListener("click", action.onClick);
+        note.append(" ", button);
+      }
+      bubble.append(note);
+      scrollToBottom();
+    },
     append(delta) {
       if (answer === "") {
         clearInterval(timer);

@@ -236,6 +236,54 @@ describe("web API", () => {
     });
   });
 
+  describe("summary", () => {
+    async function summarizeRequest(
+      id: string,
+      body = "{}",
+      contentType = "application/json",
+    ) {
+      return fetch(`${baseUrl}/api/documents/${id}/summary`, {
+        method: "POST",
+        headers: { "content-type": contentType },
+        body,
+      });
+    }
+
+    it("streams a summary and serves it from the cache the second time", async () => {
+      const uploaded = await upload("manual.pdf", createPdf(samplePages));
+      const { id } = (uploaded.at(-1) as { document: { id: string } }).document;
+
+      const first = await readEvents(await summarizeRequest(id));
+      const second = await readEvents(await summarizeRequest(id));
+      const refreshed = await readEvents(
+        await summarizeRequest(id, JSON.stringify({ refresh: true })),
+      );
+
+      expect(first).toEqual([
+        { type: "text_delta", text: "Tienes 24 días " },
+        { type: "text_delta", text: "laborables [p. 2]." },
+        { type: "done", cached: false },
+      ]);
+      expect(second).toEqual([
+        { type: "text_delta", text: "Tienes 24 días laborables [p. 2]." },
+        { type: "done", cached: true },
+      ]);
+      expect(refreshed.at(-1)).toEqual({ type: "done", cached: false });
+      expect(context.chatModel.stream).toHaveBeenCalledTimes(2);
+    });
+
+    it("validates the request", async () => {
+      const uploaded = await upload("manual.pdf", createPdf(samplePages));
+      const { id } = (uploaded.at(-1) as { document: { id: string } }).document;
+
+      expect((await summarizeRequest("a".repeat(64))).status).toBe(404);
+      expect((await summarizeRequest(id, "{}", "text/plain")).status).toBe(415);
+      expect(
+        (await summarizeRequest(id, JSON.stringify({ refresh: "yes" }))).status,
+      ).toBe(400);
+    });
+  });
+
   it("rejects requests addressed to another host", async () => {
     const status = await new Promise<number | undefined>((resolve, reject) => {
       httpRequest(
