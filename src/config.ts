@@ -27,6 +27,10 @@ export interface AppConfig {
     dataDirectory: string;
     databaseFile: string;
   };
+  server: {
+    port: number;
+    maxUploadBytes: number;
+  };
 }
 
 export type Environment = Readonly<Record<string, string | undefined>>;
@@ -64,6 +68,11 @@ export function loadConfig(env: Environment = process.env): AppConfig {
       dataDirectory,
       databaseFile:
         env.PDF_OLLAMA_DATABASE_FILE ?? join(dataDirectory, "pdf-ollama.db"),
+    },
+    server: {
+      port: readInteger(env, "PDF_OLLAMA_PORT", 3000, 1),
+      maxUploadBytes:
+        readInteger(env, "PDF_OLLAMA_MAX_UPLOAD_MB", 100, 1) * 1024 * 1024,
     },
   };
 

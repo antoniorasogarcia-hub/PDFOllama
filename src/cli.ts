@@ -2,11 +2,14 @@
 import { basename } from "node:path";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
+import {
+  createApiServer,
+  SERVER_HOST,
+  type ServerContext,
+} from "./api/server.js";
 import { type AppConfig, loadConfig } from "./config.js";
-import type { Embedder } from "./embeddings/embedder.js";
 import { OllamaEmbedder } from "./embeddings/ollama-embedder.js";
 import { generateAnswer } from "./generation/answer-generator.js";
-import type { ChatModel } from "./generation/chat-model.js";
 import { OllamaChatModel } from "./generation/ollama-chat-model.js";
 import { indexPdf } from "./ingest/index-document.js";
 import {
@@ -26,6 +29,7 @@ Commands:
   search "<text>"          Show the chunks most similar to a text
   ask "<question>"         Answer a question with page citations
   chat                     Ask several questions interactively
+  serve                    Start the web interface on http://localhost:3000
 
 Options:
   --doc <document>         Limit search to one document (id prefix or file name)
@@ -34,11 +38,7 @@ Options:
 
 Configuration is read from environment variables (see ARCHITECTURE.md).`;
 
-export interface CliContext {
-  config: AppConfig;
-  embedder: Embedder;
-  store: VectorStore;
-  chatModel: ChatModel;
+export interface CliContext extends ServerContext {
   input: NodeJS.ReadableStream;
   output: { write(text: string): unknown };
 }
@@ -72,6 +72,8 @@ export async function runCli(
       return askCommand(rest.join(" "), values, context);
     case "chat":
       return chatCommand(values, context);
+    case "serve":
+      return serveCommand(context);
     default:
       context.output.write(`${USAGE}\n`);
       if (command !== undefined && command !== "help") {
@@ -295,6 +297,34 @@ async function documentNames(store: VectorStore): Promise<Map<string, string>> {
   return new Map(
     documents.map((document) => [document.id, basename(document.sourcePath)]),
   );
+}
+
+/** Starts the web server and keeps running until Ctrl+C. */
+async function serveCommand(context: CliContext): Promise<void> {
+  const { port } = context.config.server;
+  const server = createApiServer(context);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", (error: NodeJS.ErrnoException) =>
+      reject(
+        error.code === "EADDRINUSE"
+          ? new UsageError(
+              `Port ${port} is already in use. Set PDF_OLLAMA_PORT to another port.`,
+            )
+          : error,
+      ),
+    );
+    server.listen(port, SERVER_HOST, resolve);
+  });
+  context.output.write(
+    `PDF Ollama is running at http://localhost:${port} (press Ctrl+C to stop)\n`,
+  );
+
+  await new Promise<void>((resolve) => {
+    process.once("SIGINT", () => {
+      server.closeAllConnections();
+      server.close(() => resolve());
+    });
+  });
 }
 
 /** Resolves a document from an id prefix or a file name. */
