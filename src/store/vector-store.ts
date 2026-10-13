@@ -4,6 +4,7 @@ import type {
   Embedding,
   RetrievedChunk,
   SearchFilter,
+  TextChunk,
 } from "../types.js";
 
 export interface VectorStore {
@@ -25,6 +26,8 @@ export interface VectorStore {
     topK: number,
     filter?: SearchFilter,
   ): Promise<RetrievedChunk[]>;
+  /** Returns all chunks of a document in reading order. */
+  listChunks(documentId: string): Promise<TextChunk[]>;
   /** Removes all chunks belonging to one document. */
   deleteByDocumentId(documentId: string): Promise<void>;
   /** Releases storage resources. */

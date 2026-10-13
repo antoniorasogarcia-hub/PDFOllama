@@ -89,6 +89,64 @@ describe("SqliteVectorStore", () => {
     await expect(store.search([1, 0], 3)).resolves.toEqual([]);
   });
 
+  it("lists a document's chunks in reading order", async () => {
+    await store.replaceDocument(createDocument("a"), [
+      createChunk("a", 3, [1, 0]),
+      createChunk("a", 1, [1, 0]),
+      createChunk("a", 2, [1, 0]),
+    ]);
+    await store.replaceDocument(createDocument("b"), [
+      createChunk("b", 1, [1, 0]),
+    ]);
+
+    const chunks = await store.listChunks("a");
+
+    expect(chunks.map((chunk) => chunk.pageNumber)).toEqual([1, 2, 3]);
+    expect(chunks[0]).toEqual({
+      id: "a:1:0",
+      documentId: "a",
+      pageNumber: 1,
+      text: "Text of a page 1",
+    });
+  });
+
+  it("saves and replaces summaries per chat model", async () => {
+    await store.replaceDocument(createDocument("a"), [
+      createChunk("a", 1, [1, 0]),
+    ]);
+
+    await store.saveSummary("a", "llama3.2:3b", "Primero");
+    await store.saveSummary("a", "llama3.2:3b", "Segundo");
+    await store.saveSummary("a", "llama3.2:1b", "Otro modelo");
+
+    await expect(store.findSummary("a", "llama3.2:3b")).resolves.toBe(
+      "Segundo",
+    );
+    await expect(store.findSummary("a", "llama3.2:1b")).resolves.toBe(
+      "Otro modelo",
+    );
+    await expect(store.findSummary("a", "qwen")).resolves.toBeUndefined();
+  });
+
+  it("drops summaries when their document is deleted or replaced", async () => {
+    await store.replaceDocument(createDocument("a"), [
+      createChunk("a", 1, [1, 0]),
+    ]);
+    await store.replaceDocument(createDocument("b"), [
+      createChunk("b", 1, [1, 0]),
+    ]);
+    await store.saveSummary("a", "model", "Resumen de a");
+    await store.saveSummary("b", "model", "Resumen de b");
+
+    await store.deleteByDocumentId("a");
+    await store.replaceDocument(createDocument("b"), [
+      createChunk("b", 2, [1, 0]),
+    ]);
+
+    await expect(store.findSummary("a", "model")).resolves.toBeUndefined();
+    await expect(store.findSummary("b", "model")).resolves.toBeUndefined();
+  });
+
   it("rejects embeddings with a different dimension", async () => {
     await store.replaceDocument(createDocument("a"), [
       createChunk("a", 1, [1, 0]),

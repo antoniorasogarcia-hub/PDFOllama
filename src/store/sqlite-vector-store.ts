@@ -2,12 +2,14 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { getLoadablePath } from "sqlite-vec";
+import type { SummaryCache } from "../summary/summary-cache.js";
 import type {
   Chunk,
   DocumentRecord,
   Embedding,
   RetrievedChunk,
   SearchFilter,
+  TextChunk,
 } from "../types.js";
 import type { VectorStore } from "./vector-store.js";
 
@@ -34,6 +36,13 @@ const SCHEMA = `
     text TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS chunks_document_id ON chunks(document_id);
+  CREATE TABLE IF NOT EXISTS summaries (
+    document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    chat_model TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (document_id, chat_model)
+  );
 `;
 
 interface DocumentRow {
@@ -60,7 +69,7 @@ interface SearchRow {
  * `vec0` table. Both share the chunk rowid. The vector table is created on the
  * first write because its dimension depends on the embedding model.
  */
-export class SqliteVectorStore implements VectorStore {
+export class SqliteVectorStore implements VectorStore, SummaryCache {
   private readonly database: DatabaseSync;
 
   /** Opens (or creates) the SQLite database and loads sqlite-vec. */
@@ -188,6 +197,50 @@ export class SqliteVectorStore implements VectorStore {
       text: row.text,
       score: 1 - row.distance,
     }));
+  }
+
+  /** Returns a document's chunks ordered by page and position. */
+  async listChunks(documentId: string): Promise<TextChunk[]> {
+    const rows = this.database
+      .prepare(
+        "SELECT id, document_id, page_number, text FROM chunks WHERE document_id = ? ORDER BY page_number, rowid",
+      )
+      .all(documentId) as unknown as Omit<SearchRow, "distance">[];
+    return rows.map((row) => ({
+      id: row.id,
+      documentId: row.document_id,
+      pageNumber: row.page_number,
+      text: row.text,
+    }));
+  }
+
+  /** Returns a cached summary for a document and chat model. */
+  async findSummary(
+    documentId: string,
+    chatModel: string,
+  ): Promise<string | undefined> {
+    const row = this.database
+      .prepare(
+        "SELECT summary FROM summaries WHERE document_id = ? AND chat_model = ?",
+      )
+      .get(documentId, chatModel) as { summary: string } | undefined;
+    return row?.summary;
+  }
+
+  /** Saves a summary, replacing an earlier one for the same model. */
+  async saveSummary(
+    documentId: string,
+    chatModel: string,
+    summary: string,
+  ): Promise<void> {
+    this.database
+      .prepare(
+        `INSERT INTO summaries (document_id, chat_model, summary, created_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (document_id, chat_model)
+         DO UPDATE SET summary = excluded.summary, created_at = excluded.created_at`,
+      )
+      .run(documentId, chatModel, summary, new Date().toISOString());
   }
 
   /** Removes a document and its chunks from SQLite. */
