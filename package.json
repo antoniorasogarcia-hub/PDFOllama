@@ -1,11 +1,25 @@
 {
   "name": "pdf-ollama-rag",
   "version": "0.1.0",
+  "description": "Local RAG app: upload PDFs and ask questions with page citations, or get whole-document summaries. Runs entirely on your machine with Ollama.",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antoniorasogarcia-hub/PDFOllama.git"
+  },
+  "keywords": [
+    "rag",
+    "ollama",
+    "pdf",
+    "typescript",
+    "sqlite-vec",
+    "local-llm"
+  ],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.json",

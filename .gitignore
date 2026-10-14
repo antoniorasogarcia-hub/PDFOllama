@@ -3,3 +3,7 @@ dist/
 data/
 .env
 evals/results/*.json
+
+# Local AI agent skills (third-party licenses, not redistributable)
+.agents/
+skills-lock.json
